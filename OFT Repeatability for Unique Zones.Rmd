@@ -1,0 +1,106 @@
+```{r}
+library(readxl) #Read the files
+OFT1Upt= read_excel("C:/Users/Alex/Documents/Master Biology/Chapter 1/Odour Exploration/Main Experiment/OFT1Upt.xlsx")
+OFT2Upt= read_excel("C:/Users/Alex/Documents/Master Biology/Chapter 1/Odour Exploration/Main Experiment/OFT2Upt.xlsx")
+OFT3Upt= read_excel("C:/Users/Alex/Documents/Master Biology/Chapter 1/Odour Exploration/Main Experiment/OFT3Upt.xlsx")
+OFT4Upt= read_excel("C:/Users/Alex/Documents/Master Biology/Chapter 1/Odour Exploration/Main Experiment/OFT4Upt.xlsx")
+```
+```{r}
+#Transform the columns to correct form (str(namefile))
+OFT1Upt$ID= as.character(OFT1Upt$ID)
+OFT1Upt$Sex= as.factor(OFT1Upt$Sex)
+OFT1Upt[, c(3:23)] <- sapply(OFT1Upt[, c(3:23)], as.numeric)
+
+OFT2Upt$ID= as.character(OFT2Upt$ID)
+OFT2Upt$Sex= as.factor(OFT2Upt$Sex)
+OFT2Upt[, c(3:23)] <- sapply(OFT2Upt[, c(3:23)], as.numeric)
+
+OFT3Upt$ID= as.character(OFT3Upt$ID)
+OFT3Upt$Sex= as.factor(OFT3Upt$Sex)
+OFT3Upt[, c(3:23)] <- sapply(OFT3Upt[, c(3:23)], as.numeric)
+
+OFT4Upt$ID= as.character(OFT4Upt$ID)
+OFT4Upt$Sex= as.factor(OFT4Upt$Sex)
+OFT4Upt[, c(3:23)] <- sapply(OFT4Upt[, c(3:23)], as.numeric)
+```
+
+Inner vs outer zones visited
+```{r}
+OFT1Upt$UniqueInnerZones <- rowSums(OFT1Upt[c(10,11,12,15, 16, 17)] > 0)
+OFT1Upt$UniqueOuterZones <- rowSums(OFT1Upt[c(4:9,13,14,18:23)] > 0)
+
+OFT2Upt$UniqueInnerZones <- rowSums(OFT2Upt[c(10,11,12,15, 16, 17)] > 0)
+OFT2Upt$UniqueOuterZones <- rowSums(OFT2Upt[c(4:9,13,14,18:23)] > 0)
+
+OFT3Upt$UniqueInnerZones <- rowSums(OFT3Upt[c(10,11,12,15, 16, 17)] > 0)
+OFT3Upt$UniqueOuterZones <- rowSums(OFT3Upt[c(4:9,13,14,18:23)] > 0)
+
+OFT4Upt$UniqueInnerZones <- rowSums(OFT4Upt[c(10,11,12,15, 16, 17)] > 0)
+OFT4Upt$UniqueOuterZones <- rowSums(OFT4Upt[c(4:9,13,14,18:23)] > 0)
+```
+
+Inner:outer
+```{r}
+OFT1Upt$UniqueInnerOuter = OFT1Upt$UniqueInnerZones/OFT1Upt$UniqueOuterZones
+
+OFT2Upt$UniqueInnerOuter = OFT2Upt$UniqueInnerZones/OFT2Upt$UniqueOuterZones
+
+OFT3Upt$UniqueInnerOuter = OFT3Upt$UniqueInnerZones/OFT3Upt$UniqueOuterZones
+
+OFT4Upt$UniqueInnerOuter = OFT4Upt$UniqueInnerZones/OFT4Upt$UniqueOuterZones
+```
+
+```{r}
+library(dplyr)
+UniqueInnerOuter= data.frame(OFT1Upt$ID, OFT1Upt$Sex, OFT1Upt$UniqueInnerOuter, OFT2Upt$UniqueInnerOuter, OFT3Upt$UniqueInnerOuter, OFT4Upt$UniqueInnerOuter )
+UniqueInnerOuter= UniqueInnerOuter%>% rename( #dplyr
+    "ID" = 1,
+    "Sex"= 2, 
+    "OFT1"=3,
+    "OFT2"= 4,
+    "OFT3"=5,
+    "OFT4"=6)
+```
+```{r}
+library(reshape2)
+UniqueInnerOuter = melt(UniqueInnerOuter, id.vars = c("ID"))
+UniqueInnerOuter=UniqueInnerOuter[-c(116, 178,184),]
+#UniqueInnerOuter=UniqueInnerOuter[-c(116, 178,184, 55),] #Here I tried to remove the stron outliers (55 adn 214). 214 would not remove normally, so I had to do a subset
+#UniqueInnerOuter= subset(UniqueInnerOuter, ID!= 58)
+```
+
+How to properly normalize data set? Here are mutliple attempts, but none are fruitful
+```{r}
+shapiro.test(UniqueInnerOuter$value)
+library(ggpubr)
+ggqqplot(UniqueInnerOuter$value)
+hist(UniqueInnerOuter$value)
+
+UniqueInnerOuter$sqrtvalue =sqrt(UniqueInnerOuter$value)
+hist(UniqueInnerOuter$sqrtvalue)
+shapiro.test(UniqueInnerOuter$sqrtvalue)
+
+UniqueInnerOuter$logvalue =log(UniqueInnerOuter$value)
+hist(UniqueInnerOuter$logvalue)
+shapiro.test(UniqueInnerOuter$logvalue)
+
+UniqueInnerOuter$log10value =log10(UniqueInnerOuter$value)
+hist(UniqueInnerOuter$log10value)
+shapiro.test(UniqueInnerOuter$log10value)
+
+
+UniqueInnerOuter$squarevalue =(UniqueInnerOuter$value)^2
+hist(UniqueInnerOuter$squarevalue)
+shapiro.test(UniqueInnerOuter$squarevalue)
+
+#install.packages("forecast")
+library(forecast)
+UniqueInnerOuter$boxcotvalue =BoxCox(UniqueInnerOuter$value,lambda = "auto")
+hist(UniqueInnerOuter$boxcotvalue)
+shapiro.test(UniqueInnerOuter$boxcotvalue)
+
+UniqueInnerOuter$recvalue =1/(UniqueInnerOuter$value)
+hist(UniqueInnerOuter$recvalue)
+shapiro.test(UniqueInnerOuter$recvalue)
+
+```
